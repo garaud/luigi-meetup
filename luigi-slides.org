@@ -1,0 +1,622 @@
+
+
+       _Traitement de données avec luigi_
+                    ---
+            Bordeaux Python Meetup
+
+                *Damien Garaud*
+                  /@jazzydag/
+
+* About
+  + Damien Garaud
+
+  + Scientific Programmer
+
+  + Maths, Data, Open Source, Music
+
+  + Work at [[http://oslandia.com/][Oslandia
+   ]] Data, Python, SIG, Science, Open Source
+
+  + https://github.com/garaud
+
+* Traitement de données
+* Traitement de données
+
+  + Plusieurs sources
+
+* Traitement de données
+
+  + Plusieurs sources
+
+  + Données hétérogènes
+
+* Traitement de données
+
+  + Plusieurs sources
+
+  + Données hétérogènes
+
+  + Nettoyer, aggréger, fusionner, etc.
+
+* Traitement de données
+
+  + Plusieurs sources
+
+  + Données hétérogènes
+
+  + Nettoyer, aggréger, fusionner, etc.
+
+  + Automatisation et reproductibilité
+* Sources et données hétérogènes
+* Sources et données hétérogènes
+
+  + Binaire ou texte
+    - photos, vidéos
+    - CSV, XML, JSON
+* Sources et données hétérogènes
+
+  + Binaire ou texte
+    - photos, vidéos
+    - CSV, XML, JSON
+
+  + Accès
+    - fichier
+    - SQL
+    - HTTP
+* Moyens de traiter la donnée
+* Moyens de traiter la donnée
+
+
+  + En mode batch
+
+
+  + En flux, aka streaming
+* Moyens de traiter la donnée
+
+
+  + En mode _batch_
+
+
+  + +En flux, aka streaming+
+* Exemple 1
+* Exemple 1
+
+      _Site e-commerce_
+
+* Exemple 1
+
+      _Site e-commerce_
+
+ + Appétance client
+
+* Exemple 1
+
+      _Site e-commerce_
+
+ + Appétance client
+ + Profil clients (SQL)
+* Exemple 1
+
+      _Site e-commerce_
+
+ + Appétance client
+ + Profil clients (SQL)
+ + Comportement des clients: visites, achats
+   Big Data
+
+* Exemple 1
+
+      _Site e-commerce_
+
+ + Appétance client
+ + Profil clients (SQL)
+ + Comportement des clients: visites, achats
+   Big Data
+ + Données exogènes :
+   - météo (REST API)
+   - actualités (scraping & HTML parsing)
+
+* Exemple 2
+
+  _Encyclopédie de la musique_
+
+* Exemple 2
+
+  _Encyclopédie de la musique_
+
+ + Données artistes, albums, bio
+
+* Exemple 2
+
+  _Encyclopédie de la musique_
+
+ + Données artistes, albums, bio
+
+ + Disponibilité sites streaming
+
+* Exemple 2
+
+  _Encyclopédie de la musique_
+
+ + Données artistes, albums, bio
+
+ + Disponibilité sites streaming
+
+   - dbpedia (XML)
+   - REST API (JSON)
+   - Scrap (HTML)
+
+* Dépendance
+
+
+  + Dépendance dans le traitement des données
+
+* Dépendance
+
+
+  + Dépendance dans le traitement des données
+
+  + On a besoin qu'une tâche soit finie avant
+    d'en commencer une autre
+
+* Qui a parlé de *Graphe* ?
+* Qui a parlé de *Graphe* ?
+#+BEGIN_SRC ditaa :file images/deps-graph.png :cmdline -s 1.3
+   +-----+       +-----+
+   |{io} |       |cDDD +---------+                            +------+
+   | DB  +-------+Task |         |                            | {d}  |
+   |cBCE |       |  A  |         |                            |cFEA  |
+   +-----+       +-----+         |                   +--------+Report|
+                                 |     /-------\     |        |      |
+   +-----+       +-----+         |     |cGRE   |     |        +------+
+   |{io} |       |cDDD |         |     |       |     |
+   |REST +-------+Task +---------+-----+ agg   +-----+
+   |cBCE |       |  B  |         |     |       |     |        +-------+
+   +-----+       +-----+         |     \-------/     |        |{s}cFEA|
+                                 |                   +--------+ DB    |
+   +-----+       +-----+         |                            | app   |
+   |{io} |       |cDDD |         |                            +-------+
+   |Scrap+-------+Task +---------+
+   |cBCE |       |  C  |
+   +-----+       +-----+
+#+END_SRC
+
+#+RESULTS:
+[[file:images/deps-graph.png]]
+
+* Data Pipeline
+* Data Pipeline
+
+
+       *Pipe*
+* Data Pipeline
+
+
+       *Pipe*  *Line*
+* Data Pipeline
+
+
+       *Pipe*  *Line*
+
+#+BEGIN_ASCII
+           /-------+------+------+------\
+ DATA --->     1   |  2   |   3  |   4  |
+           \-------+------+------+------/
+#+END_ASCII
+* Le frère du roi de la plomberie
+
+#+BEGIN_ASCII
+────▄████▄▄
+───▄▀█▀▐└─┐
+───█▄▐▌▄█▄┘
+───└▄▄▄▄─┘
+▄███▒██▒███▄
+▒▒█▄▒▒▒▒▄█▒▒
+──▒▒▒▀▀▒▒▒
+▄███────███▄
+#+END_ASCII
+
+* Le frère du roi de la plomberie
+
+            *luigi*
+
+ - Spotify
+ - Open Source
+ - Python
+ - https://github.com/spotify/luigi
+ - Autres: [[https://github.com/Factual/drake][drake]], [[https://github.com/apache/incubator-airflow][Apache Airflow]]
+* Ce que luigi n'est pas
+
+  + Un [[https://fr.wikipedia.org/wiki/Extract-transform-load][ETL]] classique (e.g. Talend, Pentaho)
+    /Extract Tranform Load/
+
+
+  + Un outil graphique
+
+* Principes
+
+ - =Task=
+
+ - =Target=
+* Task
+
+ - Exécute le code pour traiter la donnée
+
+ - Génère une =Target=
+
+ - Une tâche peut dépendre d'autre(s) =Task=
+* Target
+
+  L'exécution d'une =Task= génère de la data
+
+    - fichiers (CSV, JSON)
+
+    - insertion DB
+* Dépendance
+
+           Je suis =B= <-- dépend de =A=
+* Dépendance
+
+           Je suis =B= <-- dépend de =A=
+
+    Besoin de la =Target= générée par =A=
+* Dépendance
+#+BEGIN_SRC ditaa :file images/luigi-graph.png :cmdline -s 1.3
+
+    +--------+    /--------\    +--------+
+    | {io}   |    | cGRE   |    |        |
+    |Source A*----+ Task A +--->+Target A|
+    |cBCE    |    |        |    |cBCE    |
+    +--------+    \--------/    +---*----+
+                                    |
+                                    |
+                                    |
+                                /---+----\    +--------+
+                                | cGRE   |    |        |
+                                | Task B +--->+Target B|
+                                |        |    |cFEA    |
+                                \--------/    +--------+
+#+END_SRC
+
+#+RESULTS:
+[[file:images/luigi-graph.png]]
+
+* Dépendance
+
+   luigi fait la résolution de vos dépendances
+
+                 *tout seul*
+
+* Dépendance
+
+   luigi fait la résolution de vos dépendances
+
+                 *tout seul*
+
+   et parallèlise ce qui est possible
+* Dépendance
+
+   luigi fait la résolution de vos dépendances
+
+                 *tout seul*
+
+   et parallèlise ce qui est possible
+
+   et en plus quand une =Task= est faite
+   elle est *faite*
+* La classe =Task=
+
+  *Trois méthodes*
+* La classe =Task=
+
+  *Trois méthodes*
+
+   - =output=
+
+   - =requires=
+
+   - =run=
+
+* La classe =Task=
+#+BEGIN_SRC python
+import luigi
+
+class WeatherData(luigi.Task):
+    pathname = "output/data.csv"
+    def output(self):
+        return luigi.LocalTarget(self.pathname)
+
+    def requires(self):
+        return PreviousTask()
+
+    def run(self):
+        # get the dependency target
+        needed_filename = self.input().path
+        # data processing
+#+END_SRC
+* Requires (1)
+
+Vous pouvez dépendre de plusieurs =Tasks=
+* Requires (1)
+#+BEGIN_SRC python
+   # note that the self.date is a date
+   def requires(self):
+       return [DBPediaTask(),
+               SpotifyTask(self.date),
+               MusicBrainzTask(self.date)]
+#+END_SRC
+* Requires (1)
+#+BEGIN_SRC python
+  # note that the self.date is a date
+  def requires(self):
+      return [DBPediaTask(),
+              SpotifyTask(self.date),
+              MusicBrainzTask(self.date)]
+
+  def run(self):
+      # is a list of Targets
+      dbpedia_target = self.input()[0]
+      spotify_target = self.input()[1]
+      music_brz_target = self.input()[2]
+#+END_SRC
+
+* Requires (2)
+
+Un dico, ça marche bien aussi
+* Requires (2)
+#+BEGIN_SRC python
+  # note that the self.date is a date
+  def requires(self):
+      return {"dbpedia": DBPediaTask(),
+              "spotify": SpotifyTask(self.date),
+              "music_brz": MusicBrainzTask(self.date)}
+
+  def run(self):
+      dbpedia_target = self.input()['dbpedia']
+      spotify_target = self.input()['spotify']
+      music_brz_target = self.input()['music_brz']
+#+END_SRC
+* Revenons au paramètre
+
+ Vous savez, le =self.date=
+* Revenons au paramètre
+
+ Vous savez, le =self.date=
+
+ - Un paramètre c'est un argument à donner
+   à une =Task=
+* Revenons au paramètre
+
+ Vous savez, le =self.date=
+
+ - Un paramètre c'est un argument à donner
+   à une =Task=
+ - Le fichier cible *devra* être différent
+* Revenons au paramètre
+
+ Vous savez, le =self.date=
+
+ - Un paramètre c'est un argument à donner
+   à une =Task=
+ - Le fichier cible *devra* être différent
+ - Par exemple traiter des données une fois
+   par jour
+   =data/output-2017-01-17.csv=
+* Les paramètres luigi
+
+ - =luigi.Parameter=
+* Les paramètres luigi
+
+ - =luigi.Parameter=
+
+ - mais aussi =Float=, =Int= ou =DateParameter=
+* DateParameter
+#+BEGIN_SRC python
+from datetime import date
+import luigi
+from luigi.format import UTF8
+#+END_SRC
+* DateParameter
+#+BEGIN_SRC python
+from datetime import date
+import luigi
+from luigi.format import UTF8
+
+class DailyTask(luigi.Task):
+    date = luigi.DateParameter(default=date.today())
+    path = "data/output-{}.csv"
+#+END_SRC
+* DateParameter
+#+BEGIN_SRC python
+from datetime import date
+import luigi
+from luigi.format import UTF8
+
+class DailyTask(luigi.Task):
+    date = luigi.DateParameter(default=date.today())
+    path = "data/output-{}.csv"
+
+    def output(self):
+        return luigi.LocalTarget(self.path.format(self.date), format=UTF8)
+#+END_SRC
+
+* Et les =Target= ?
+* Et les =Target= ?
+
+ Ça indique à luigi que la =Task= a été
+ *effectuée*
+
+* Et les =Target= ?
+
+ Ça indique à luigi que la =Task= a été
+ *effectuée*
+
+ =LocalTarget= c'est l'écriture simple
+ d'un fichier en local
+
+* Et les =Target= ?
+
+ Ça indique à luigi que la =Task= a été
+ *effectuée*
+
+ =LocalTarget= c'est l'écriture simple
+ d'un fichier en local
+
+ Mais aussi : insertion en base, hdfs,
+ pyspark job, ftp, redshift, et [[http://luigi.readthedocs.io/en/stable/api/luigi.contrib.html][autres]]
+
+* Comment lancer
+
+ Commande =luigi= et =luigid=
+
+ - en local
+
+   =luigi --local-scheduler --module pkg.module FinalTask --date 2017-01-17=
+
+* Comment lancer
+
+ Commande =luigi= et =luigid=
+
+ - en local
+
+   =luigi --local-scheduler --module pkg.module FinalTask --date 2017-01-17=
+
+ - sur le scheduler
+
+   =luigid=
+   =luigi --module pkg.module FinalTask=
+
+   Web app sur http://localhost:8082
+
+* Web App / Main page
+[[./images/visualiser_front_page.png]]
+
+* Web App / Graphe
+[[./images/webapp_deps.png]]
+
+* Conclusion
+
+ Problème initial
+
+  + Plusieurs sources
+
+  + Données hétérogènes
+
+  + Nettoyer, aggréger, fusionner, etc.
+
+  + Automatisation et reproductibilité
+* Sources et données hétérogènes
+* Sources et données hétérogènes
+
+  *Python*
+
+  - SQL : psycopg2, pymsql, ...
+  - noSQL : pymongo, redis, ...
+  - Hadoop : Hive
+  - Format : XML, JSON, HTML, CSV
+* Nettoyer, aggréger, fusionner
+* Nettoyer, aggréger, fusionner
+
+ *Python Pandas*
+
+ - rapide & efficace
+ - données manquantes, group-by, merge, ...
+ - basée sur [[http:www.numpy.org][numpy]]
+ - http://pandas.pydata.org/
+* Automatisation & reproductibilité
+
+ *luigi*
+
+* Automatisation & reproductibilité
+
+ *luigi*
+
+ Avec en plus :
+
+ - graphe des dépendances
+ - parallélisation
+ - reprise sur arrêt
+ - types de =Target=
+ - Web app de visualisation
+* Le temps d'une démo
+
+  [[https://github.com/garaud/airground][Airground]]
+
+
+  Données météo & pollution
+  autour des aires de jeux
+* Airground
+
+  1. récupération des données géolocalisées
+     des aires de jeux
+     http://opendata.bordeaux.fr/aires-de-jeux
+
+  2. données météo en chaque point
+
+  3. données pollution en chaque point
+* Données météo
+
+  + [[http://openweathermap.org/api][Open Weather API]]
+
+  + [[https://darksky.net/dev/docs][Dark Sky API]]
+
+  + Vous devez demander une *clé* (aka /token/)
+
+* Données de pollution
+
+  + Entreprise [[https://plumelabs.com/en/][Plume Labs]]
+
+  + [[https://plume.readme.io/v1.0/docs][Plume API]]
+* Traitement
+
+  + Quotidien
+
+* Traitement
+
+  + Quotidien
+
+  + Un =DateParameter=
+
+  + Fichiers générés de la forme
+    =data/some-data-2017-01-17.json=
+
+* Traitement
+#+BEGIN_SRC ditaa :file images/airground-graph.png
+                                 +---------------+         +---------------+
+                                 |               |         |               |
+                                 |  DarkSky API  |         | DarkSky       |
+                         +------>+               |         | Data          |
+                         |       |  JSON         +-------->+               +-----------+
+                         |       |               |         | CSV           |           |
+                         |       |  cDDD         |         | cCCD          |           |
+                         |       |               |         |               |           |
+                         |       +---------------+         +---------------+           |
+                         |                                                             |
++-----------------+      |                                                             |
+|                 |      |                                                             |
+|   Open Data     |      |                                                             |        +--------------+
+|   Bordeaux      |      |                                                             |        |              |
+|                 |      |                                                             |        | Aggrégation  |
+|   Playground    *------+                                                             +------->+              |
+|                 |      |                                                             |        |              |
+|  cBCE           |      |                                                             |        |  cGRE        |
+|                 |      |                                                             |        |              |
++-----------------+      |                                                             |        |              |
+                         |       +-----------------+         +---------------+         |        +--------------+
+                         |       |                 |         |               |         |
+                         |       | OpenWeather API |         | OpenWeather   |         |
+                         |       |                 |         | Data          |         |
+                         |       | JSON            +-------->+               |         |
+                         +------>+                 |         | CSV           +---------+
+                                 | cDDD            |         | cCCD          |
+                                 |                 |         |               |
+                                 +-----------------+         +---------------+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:images/airground-graph.png]]
+
+* Merci à tous
+
+  [[./images/futurama-over.jpg]]
